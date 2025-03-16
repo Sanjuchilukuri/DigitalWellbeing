@@ -26,31 +26,37 @@ namespace DigitalWellbeing
 
         public async Task<bool> SaveToFireBase(Dictionary<string, TimeSpan> appDurations)
         {
+            var tasks = new List<Task<bool>>();
+
             foreach (var entry in appDurations)
             {
-                var data = new Activity()
+                tasks.Add(Task.Run(async () =>
                 {
-                    Name = entry.Key,
-                    Duration = entry.Value
-                };
-
-                try
-                {
-                    var response = await firebaseClient.SetAsync($"AppUsage/{data.Date.ToString("yyyy-MM-dd")}/{data.Name}", data);
-
-                    if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                    var data = new Activity()
                     {
+                        Name = entry.Key,
+                        Duration = entry.Value
+                    };
+
+                    try
+                    {
+                        var response = await firebaseClient.SetAsync(
+                            $"AppUsage/{data.Date:yyyy-MM-dd}/{data.Name}", data);
+
+                        return response.StatusCode == System.Net.HttpStatusCode.OK;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
                         return false;
                     }
-                }
-                catch(Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
+                }));
             }
 
-            return true;
+            var results = await Task.WhenAll(tasks);
+            return results.All(success => success);
         }
+
 
         public async Task<bool> SaveToSqlServer(Dictionary<string, TimeSpan> appDurations)
         {

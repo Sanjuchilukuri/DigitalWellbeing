@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -11,6 +10,7 @@ namespace DigitalWellbeing
         private readonly Utils _utils;
         private readonly Configuration _configuration;
         private readonly DBStorage _DBStorage;
+
 
         public Listener(Logger logger, Utils utils, Configuration configuration, DBStorage dBStorage)
         {
@@ -35,6 +35,12 @@ namespace DigitalWellbeing
             SystemEvents.SessionEnding += (sender, e) => Task.Run(() => ProcessLogs());
             SystemEvents.EventsThreadShutdown += (sender, e) => Task.Run(() => ProcessLogs());
             SystemEvents.SessionEnded += (sender, e) => Task.Run(() => ProcessLogs());
+
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                ProcessLogs().GetAwaiter().GetResult(); 
+            };
+
 
             string currentApp = "";
             DateTime startTime = DateTime.Now;
